@@ -5,8 +5,10 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
 const { BaseLayer, Overlay } = LayersControl;
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
@@ -35,6 +37,35 @@ const KarauliMap = () => {
   const [timeSeriesData, setTimeSeriesData] = useState(null);
   const [loading, setLoading] = useState(false);
   
+  const [visibleDataSets, setVisibleDataSets] = useState({
+    'Background': true,
+    'Built-up': true,
+    'Water in Kharif': true,
+    'Water in Kharif+Rabi': true,
+    'Water in Kharif+Rabi+Zaid':  true,
+    'Tree/Forests': true,
+    'Barrenlands': true,
+    'Single cropping cropland': true,
+    'Single Non-Kharif cropping cropland': true,
+    'Double cropping cropland': true,
+    'Triple cropping cropland': true,
+    'Shrub_Scrub': true,
+  });
+
+  const categoryColors = {
+    'Background': '#d9d9d9', // Grey
+    'Built-up': '#c0392b', // Red
+    'Water in Kharif': '#3498db', // Blue
+    'Water in Kharif+Rabi': '#2ecc71', // Green
+    'Water in Kharif+Rabi+Zaid': '#f1c40f', // Yellow
+    'Tree/Forests': '#16a085', // Green sea
+    'Barrenlands': '#7f8c8d', // Concrete
+    'Single cropping cropland': '#9b59b6', // Amethyst
+    'Single Non-Kharif cropping cropland': '#34495e', // Wet asphalt
+    'Double cropping cropland': '#f39c12', // Orange
+    'Triple cropping cropland': '#d35400', // Pumpkin
+    'Shrub_Scrub': '#95a5a6', // Silver
+  };
 
   useEffect(() => {
     axios.get('http://localhost:8000/api/karauli_villages_geojson/')
@@ -79,6 +110,27 @@ const KarauliMap = () => {
     fillColor: '#3388ff',
     fillOpacity: 0.2,
   };
+
+  
+  const toggleDataSetVisibility = (category) => {
+    setVisibleDataSets(prevState => ({ ...prevState, [category]: !prevState[category] }));
+  };
+
+  const chartData = timeSeriesData ? {
+    labels: Object.keys(timeSeriesData),
+    datasets: Object.entries(timeSeriesData['2014'] ?? {}).reduce((datasets, [category]) => {
+      if (visibleDataSets[category]) {
+        datasets.push({
+          label: category,
+          data: Object.values(timeSeriesData).map(yearData => yearData[category]),
+          fill: false,
+          borderColor: categoryColors[category], // Ideally, use unique colors for each category
+          tension: 0.1,
+        });
+      }
+      return datasets;
+    }, []),
+  } : {};
 
   const chartOptions = {
     scales: {
@@ -172,24 +224,23 @@ const KarauliMap = () => {
         )}
           <div className="flex-grow p-4 bg-white">
           <div className="text-black text-xl font-semibold mb-4 bg-white">Land Cover Change Over Time</div>
+          <div className="flex flex-wrap gap-2 mb-4">
+  {timeSeriesData && Object.keys(visibleDataSets).map(category => (
+    <button
+      key={category}
+      onClick={() => toggleDataSetVisibility(category)}
+      className={`px-3 py-1 rounded-full text-sm font-medium ${visibleDataSets[category] ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+    >
+      {category}
+    </button>
+  ))}
+</div>
           {loading ? (
             <p className='text-black'>Loading time series data...</p>
           ) : timeSeriesData ? (
             <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
               <Line
-                data={{
-                  labels: Object.keys(timeSeriesData),
-                  datasets: [
-                    {
-                      label: 'Land cover change',
-                      data: Object.values(timeSeriesData).map(yearData => yearData['Built-up']), // Example for 'Built-up' class
-                      fill: false,
-                      borderColor: 'rgb(75, 192, 192)',
-                      tension: 0.1,
-                    },
-                    // Add more datasets for other classes if needed
-                  ],
-                }}
+               data={chartData}
                 options={chartOptions}
                 height={null} // Ensuring chart occupies all available height
                 width={null} // Ensuring chart occupies all available width
