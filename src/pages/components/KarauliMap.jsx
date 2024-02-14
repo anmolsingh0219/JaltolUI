@@ -40,33 +40,33 @@ const KarauliMap = () => {
   const [loading, setLoading] = useState(false);
   
   const [visibleDataSets, setVisibleDataSets] = useState({
-    'Background': true,
-    'Built-up': true,
-    'Water in Kharif': true,
-    'Water in Kharif+Rabi': true,
-    'Water in Kharif+Rabi+Zaid':  true,
-    'Tree/Forests': true,
-    'Barrenlands': true,
+    // 'Background': true,
+    // 'Built-up': true,
+    // 'Water in Kharif': true,
+    // 'Water in Kharif+Rabi': true,
+    // 'Water in Kharif+Rabi+Zaid':  true,
+    // 'Tree/Forests': true,
+    // 'Barrenlands': true,
     'Single cropping cropland': true,
-    'Single Non-Kharif cropping cropland': true,
+    // 'Single Non-Kharif cropping cropland': true,
     'Double cropping cropland': true,
-    'Triple cropping cropland': true,
-    'Shrub_Scrub': true,
+    // 'Triple cropping cropland': true,
+    // 'Shrub_Scrub': true,
   });
 
   const categoryColors = {
-    'Background': '#d9d9d9', // Grey
-    'Built-up': '#c0392b', // Red
-    'Water in Kharif': '#3498db', // Blue
-    'Water in Kharif+Rabi': '#2ecc71', // Green
-    'Water in Kharif+Rabi+Zaid': '#f1c40f', // Yellow
-    'Tree/Forests': '#16a085', // Green sea
-    'Barrenlands': '#7f8c8d', // Concrete
+    // 'Background': '#d9d9d9', // Grey
+    // 'Built-up': '#c0392b', // Red
+    // 'Water in Kharif': '#3498db', // Blue
+    // 'Water in Kharif+Rabi': '#2ecc71', // Green
+    // 'Water in Kharif+Rabi+Zaid': '#f1c40f', // Yellow
+    // 'Tree/Forests': '#16a085', // Green sea
+    // 'Barrenlands': '#7f8c8d', // Concrete
     'Single cropping cropland': '#9b59b6', // Amethyst
-    'Single Non-Kharif cropping cropland': '#34495e', // Wet asphalt
+    // 'Single Non-Kharif cropping cropland': '#34495e', // Wet asphalt
     'Double cropping cropland': '#f39c12', // Orange
-    'Triple cropping cropland': '#d35400', // Pumpkin
-    'Shrub_Scrub': '#95a5a6', // Silver
+    // 'Triple cropping cropland': '#d35400', // Pumpkin
+    // 'Shrub_Scrub': '#95a5a6', // Silver
   };
 
   useEffect(() => {
