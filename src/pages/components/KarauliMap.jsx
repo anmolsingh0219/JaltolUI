@@ -10,6 +10,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+const API_BASE_URL = 'http://3.109.201.231:8001/api/';
+
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
 
@@ -68,7 +70,7 @@ const KarauliMap = () => {
   };
 
   useEffect(() => {
-    axios.get('http://localhost:8000/api/karauli_villages_geojson/')
+    axios.get(`${API_BASE_URL}karauli_villages_geojson/`)
       .then(response => {
         setGeoJsonData(response.data);
       })
@@ -83,7 +85,7 @@ const KarauliMap = () => {
         setSelectedVillage(feature.properties);
         setSelectedVillageGeometry(layer);
         setLoading(true);
-        axios.get(`http://localhost:8000/api/area_change/${feature.properties.VCT_N_11}/`)
+        axios.get(`${API_BASE_URL}area_change/${feature.properties.VCT_N_11}/`)
           .then(response => {
             setTimeSeriesData(response.data);
             setLoading(false);
@@ -92,7 +94,7 @@ const KarauliMap = () => {
             console.error('Error fetching time series data:', error);
             setLoading(false);
           });
-        axios.get(`http://localhost:8000/api/get_karauli_raster/`)
+        axios.get(`${API_BASE_URL}get_karauli_raster/`)
           .then(response => {
             setRasterUrl(response.data.tiles_url);
           })
