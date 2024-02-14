@@ -10,7 +10,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'http://3.109.201.231:8001/api/';
+const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
