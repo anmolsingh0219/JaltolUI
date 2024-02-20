@@ -328,7 +328,7 @@ const KarauliMap = () => {
   ))}
 </div>
           {loading ? (
-            <p className='text-red font-bold'>Loading time series data... (20sec)</p>
+            <p className='text-red-900 font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
             <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
               <Line
