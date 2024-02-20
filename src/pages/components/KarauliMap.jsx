@@ -33,6 +33,11 @@ FlyToVillage.propTypes = {
   }),
 };
 
+const datasetDisplayNames = {
+  'Single cropping cropland': 'Single Cropland',
+  'Double cropping cropland': 'Double Cropland',
+};
+
 const KarauliMap = () => {
   const [geoJsonData, setGeoJsonData] = useState(null);
   const [selectedVillage, setSelectedVillage] = useState(null);
@@ -52,16 +57,16 @@ const KarauliMap = () => {
     // 'Tree/Forests': true,
     // 'Barrenlands': true,
     // 'Single cropping cropland': true,
-    'Single cropping ': true,
+    'Single cropping cropland': true,
     // 'Single Non-Kharif cropping cropland': true,
     // 'Double cropping cropland': true,
-    'Double cropping ': true,
+    'Double cropping cropland': true,
     // 'Triple cropping cropland': true,
     // 'Shrub_Scrub': true,
   });
 
   const categoryColors = {
-    'Background': '#b2df8a', // Assuming these match the order of your 'palette'
+  'Background': '#b2df8a', // Assuming these match the order of your 'palette'
   'Built-up': '#6382ff',
   'Water in Kharif': '#d7191c',
   'Water in Kharif+Rabi': '#f5ff8b',
@@ -173,7 +178,7 @@ const KarauliMap = () => {
     datasets: Object.entries(timeSeriesData['2014'] ?? {}).reduce((datasets, [category]) => {
       if (visibleDataSets[category]) {
         datasets.push({
-          label: category,
+          label: datasetDisplayNames[category],
           data: Object.values(timeSeriesData).map(yearData => yearData[category]),
           fill: false,
           borderColor: categoryColors[category],
@@ -318,12 +323,12 @@ const KarauliMap = () => {
       onClick={() => toggleDataSetVisibility(category)}
       className={`px-3 py-1 rounded-full text-sm font-medium ${visibleDataSets[category] ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
     >
-      {category}
+      {datasetDisplayNames[category]}
     </button>
   ))}
 </div>
           {loading ? (
-            <p className='text-black font-bold'>Loading time series data... (20sec)</p>
+            <p className='text-red font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
             <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
               <Line
