@@ -51,9 +51,11 @@ const KarauliMap = () => {
     // 'Water in Kharif+Rabi+Zaid':  true,
     // 'Tree/Forests': true,
     // 'Barrenlands': true,
-    'Single cropping cropland': true,
+    // 'Single cropping cropland': true,
+    'Single cropping ': true,
     // 'Single Non-Kharif cropping cropland': true,
-    'Double cropping cropland': true,
+    // 'Double cropping cropland': true,
+    'Double cropping ': true,
     // 'Triple cropping cropland': true,
     // 'Shrub_Scrub': true,
   });
@@ -321,7 +323,7 @@ const KarauliMap = () => {
   ))}
 </div>
           {loading ? (
-            <p className='text-black'>Loading time series data...</p>
+            <p className='text-black font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
             <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
               <Line
