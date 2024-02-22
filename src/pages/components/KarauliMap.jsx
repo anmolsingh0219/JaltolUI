@@ -7,12 +7,13 @@ import PropTypes from 'prop-types';
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { saveAs } from 'file-saver';
 
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
@@ -63,21 +64,22 @@ const KarauliMap = () => {
     'Double cropping cropland': true,
     // 'Triple cropping cropland': true,
     // 'Shrub_Scrub': true,
+    'Precipitation': true,
   });
 
   const categoryColors = {
-  'Background': '#b2df8a', // Assuming these match the order of your 'palette'
-  'Built-up': '#6382ff',
-  'Water in Kharif': '#d7191c',
-  'Water in Kharif+Rabi': '#f5ff8b',
-  'Water in Kharif+Rabi+Zaid': '#dcaa68',
-  'Tree/Forests': '#33a02c',
-  'Barrenlands': '#50c361',
-  'Single cropping cropland': '#000000', // Adjusted based on your message, seems like a mismatch
-  'Single Non-Kharif cropping cropland': '#dac190',
-  'Double cropping cropland': '#a6cee3',
-  'Triple cropping cropland': '#38c5f9',
-  'Shrub_Scrub': '#6e0002',
+  // 'Background': '#b2df8a', // Assuming these match the order of your 'palette'
+  // 'Built-up': '#6382ff',
+  // 'Water in Kharif': '#d7191c',
+  // 'Water in Kharif+Rabi': '#f5ff8b',
+  // 'Water in Kharif+Rabi+Zaid': '#dcaa68',
+  'Tree/Forests': '#397d49',
+  // 'Barrenlands': '#50c361',
+  'Single cropping cropland': '#8b9dc3', // Adjusted based on your message, seems like a mismatch
+  // 'Single Non-Kharif cropping cropland': '#dac190',
+  'Double cropping cropland': '#222f5b',
+  // 'Triple cropping cropland': '#38c5f9',
+  'Shrub_Scrub': '#946b2d',
   };
 
   useEffect(() => {
@@ -171,7 +173,7 @@ const KarauliMap = () => {
   
   const toggleDataSetVisibility = (category) => {
     setVisibleDataSets(prevState => ({ ...prevState, [category]: !prevState[category] }));
-  };
+  };  
 
   const landCoverChartData = timeSeriesData ? {
     labels: Object.keys(timeSeriesData),
@@ -207,8 +209,8 @@ const KarauliMap = () => {
     labels: precipitationChartData.labels.length ? precipitationChartData.labels : landCoverChartData.labels,
     datasets: [
       ...landCoverChartData.datasets,
-      ...precipitationChartData.datasets
-    ]
+      visibleDataSets['Precipitation'] ? precipitationChartData.datasets : []
+    ].flat() // Use .flat() to remove any empty arrays that may result from the ternary operation
   };
 
   const chartOptions = {
@@ -220,7 +222,11 @@ const KarauliMap = () => {
         },
         grid: {
           color: 'rgba(0, 0, 0, 0.1)', // Y-axis grid line color
-        }
+        },
+        title: {
+          display: true,
+          text: 'Area (ha)',
+        },
       },
       y1: {
         // New y-axis for precipitation data...
@@ -280,6 +286,52 @@ const KarauliMap = () => {
   };
 
 
+  // Function to merge time series data and precipitation data
+const mergeDataForCSV = (timeSeriesData, precipitationData) => {
+  const mergedData = Object.keys(timeSeriesData).map(year => {
+    const singleCropping = timeSeriesData[year]['Single cropping cropland'] || 0;
+    const doubleCropping = timeSeriesData[year]['Double cropping cropland'] || 0;
+    const precipitation = precipitationData.find(item => item[0] === year)?.[1] || 0;
+    return {
+      Year: year,
+      'Single Cropland (ha)': singleCropping,
+      'Double Cropland (ha)': doubleCropping,
+      'Precipitation (mm)': precipitation
+    };
+  });
+  return mergedData;
+};
+
+// Function to convert merged data to CSV string
+const convertToCSV = (mergedData) => {
+  const headers = Object.keys(mergedData[0]).join(',') + '\r\n';
+  const rows = mergedData.map(row => Object.values(row).join(',')).join('\r\n');
+  return headers + rows;
+};
+
+// Function to trigger the download of CSV
+const downloadCSV = (mergedData) => {
+  if (!mergedData || mergedData.length === 0) {
+    alert('No data available to download');
+    return;
+  }
+
+  const csvData = convertToCSV(mergedData);
+  const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+  
+  // Create a file name using the village name, replacing spaces with underscores
+  const fileName = `${selectedVillage.VCT_N_11.replace(/\s+/g, '_')}_${selectedVillage.SubD_N_11}_data.csv`;
+
+  saveAs(blob, fileName);
+};
+
+// In your component
+const handleDownloadClick = () => {
+  
+  const mergedData = mergeDataForCSV(timeSeriesData, precipitationData);
+  downloadCSV(mergedData, selectedVillage.VCT_N_11, selectedVillage.SubD_N_11 );
+};
+
   return (
     <div className="flex h-screen w-screen">
       <MapContainer center={[26.5, 76.5]} zoom={10} className="h-full w-1/2">
@@ -304,7 +356,7 @@ const KarauliMap = () => {
         {selectedVillageGeometry && <FlyToVillage villageGeometry={selectedVillageGeometry} />}
         <Legend />
       </MapContainer>
-      <div className="w-1/2 flex flex-col">
+      <div className="w-1/2 flex flex-col bg-white">
         {selectedVillage && (
           <div className="overflow-y-auto p-4 bg-white text-black">
             <h2 className="text-lg font-semibold mb-2">Village Details</h2>
@@ -314,21 +366,21 @@ const KarauliMap = () => {
             {/* Additional village details can be added here */}
           </div>
         )}
-          <div className="flex-grow p-4 bg-white">
+          <div className="flex flex-col p-4 bg-white">
           <div className="text-black text-xl font-semibold mb-4 bg-white">Land Cover Change Over Time</div>
           <div className="flex flex-wrap gap-2 mb-4">
-  {timeSeriesData && Object.keys(visibleDataSets).map(category => (
+  {Object.entries(visibleDataSets).map(([category, isVisible]) => (
     <button
       key={category}
       onClick={() => toggleDataSetVisibility(category)}
-      className={`px-3 py-1 rounded-full text-sm font-medium ${visibleDataSets[category] ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
+      className={`px-3 py-1 rounded-full text-sm font-medium ${isVisible ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 border border-gray-300'}`}
     >
-      {datasetDisplayNames[category]}
+      {datasetDisplayNames[category] || category} 
     </button>
   ))}
 </div>
           {loading ? (
-            <p className='text-red-900 font-bold'>Loading time series data... (20sec)</p>
+            <p className='text-red-600 font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
             <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
               <Line
@@ -342,6 +394,9 @@ const KarauliMap = () => {
             <p className='text-black'>Select a village to view the time series data.</p>
           )}
         </div>
+        <button onClick={handleDownloadClick} disabled={!timeSeriesData || !precipitationData}>
+         Download Data as CSV
+        </button>
       </div>
     </div>
   );
