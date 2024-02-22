@@ -12,8 +12,8 @@ import { saveAs } from 'file-saver';
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
