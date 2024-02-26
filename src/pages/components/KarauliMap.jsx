@@ -12,8 +12,8 @@ import { saveAs } from 'file-saver';
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
@@ -198,7 +198,8 @@ const KarauliMap = () => {
       label: 'Precipitation (mm)',
       data: precipitationData.map(item => item[1]),
       fill: false,
-      borderColor: '#3498db', // Color for precipitation data line
+      borderColor: '#3498db',
+      borderDash: [5, 5], // Color for precipitation data line
       yAxisID: 'y1',
       tension: 0.1,
     }] : [] // Initialize as an empty array if precipitationData is not available
@@ -332,8 +333,40 @@ const handleDownloadClick = () => {
   downloadCSV(mergedData, selectedVillage.VCT_N_11, selectedVillage.SubD_N_11 );
 };
 
+const InfoPanel = ({ villageName }) => {
+  const todaysDate = new Date().toLocaleDateString();
+  const lastUpdated = "Data last updated on: 2024-02-22"; // replace with actual last updated date
+  const landUseData = "Land Use data fetched from the National Satellite Land Monitoring Agency"; // replace with actual source
+
+  return (
+    <div className="info-panel" style={{
+      position: 'absolute',
+      top: '5px',
+      right: '5px',
+      zIndex: 1000,
+      backgroundColor: 'black',
+      color: 'white',
+      padding: '7px',
+      borderRadius: '5px',
+      maxWidth: '300px'
+      // other styles you want to apply
+    }}>
+      <p>{villageName}</p> {/* Dynamic village name */}
+      <p>{todaysDate}</p>
+      <p>{lastUpdated}</p>
+      <p>{landUseData}</p>
+      {/* ... other info you want to display ... */}
+    </div>
+  );
+};
+
+InfoPanel.propTypes = {
+  villageName: PropTypes.string.isRequired,
+};
+
   return (
     <div className="flex h-screen w-screen">
+          {selectedVillage && <InfoPanel villageName={selectedVillage.VCT_N_11} />}
       <MapContainer center={[26.5, 76.5]} zoom={10} className="h-full w-1/2">
         <LayersControl position="topright">
           <BaseLayer checked name="OpenStreetMap">
@@ -394,9 +427,21 @@ const handleDownloadClick = () => {
             <p className='text-black'>Select a village to view the time series data.</p>
           )}
         </div>
-        <button onClick={handleDownloadClick} disabled={!timeSeriesData || !precipitationData}>
-         Download Data as CSV
-        </button>
+        <button
+  onClick={handleDownloadClick}
+  disabled={!timeSeriesData || !precipitationData}
+  style={{
+    backgroundColor: (!timeSeriesData || !precipitationData) ? 'rgba(255, 0, 0, 0.5)' : 'red',
+    color: 'white',
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: '5px',
+    cursor: (!timeSeriesData || !precipitationData) ? 'not-allowed' : 'pointer',
+    // other styles you want to apply
+  }}
+>
+  Download Data as CSV
+</button>
       </div>
     </div>
   );
