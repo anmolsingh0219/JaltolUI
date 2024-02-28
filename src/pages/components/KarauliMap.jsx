@@ -75,7 +75,7 @@ const KarauliMap = () => {
   const [precipitationData, setPrecipitationData] = useState(null);
   const [districts, setDistricts] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState('');
-  const [districtsGeoJSON, setDistrictsGeoJSON] = useState({});
+  // const [districtsGeoJSON, setDistrictsGeoJSON] = useState({});
   const [selectedDistrictGeometry, setSelectedDistrictGeometry] = useState(null);
   const [geoJsonKey, setGeoJsonKey] = useState(Math.random());
 
@@ -120,6 +120,30 @@ const KarauliMap = () => {
     setSelectedDistrict(selectedOption);
   };
 
+  const fetchGeoJsonData = (districtValue) => {
+    axios.get(`${API_BASE_URL}karauli_villages_geojson/${districtValue}/`)
+      .then(response => {
+        setGeoJsonData(response.data);
+        const bounds = L.geoJSON(response.data).getBounds();
+        setSelectedDistrictGeometry({ getBounds: () => bounds });
+        setGeoJsonKey(Math.random()); // Set a new key to force re-render the GeoJSON
+      })
+      .catch(error => {
+        console.error('Error fetching GeoJSON data for district:', error);
+      });
+  };
+
+  // Function to fetch raster data
+  const fetchRasterData = (districtValue) => {
+    axios.get(`${API_BASE_URL}get_karauli_raster/${districtValue}/`)
+      .then(response => {
+        setRasterUrl(response.data.tiles_url);
+      })
+      .catch(error => {
+        console.error('Error fetching raster data:', error);
+      });
+  };
+
   useEffect(() => {
     // Fetch districts for dropdown
     axios.get(`${API_BASE_URL}list_districts/`)
@@ -138,51 +162,10 @@ const KarauliMap = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedDistrict) {
-      // Check if we already have the GeoJSON for the selected district
-      if (districtsGeoJSON[selectedDistrict.value]) {
-        setGeoJsonData(districtsGeoJSON[selectedDistrict.value]);
-      } else {
-        // Fetch GeoJSON data for the selected district
-        axios.get(`${API_BASE_URL}karauli_villages_geojson/${selectedDistrict.value}/`)
-          .then(response => {
-            // Update the GeoJSON state with the fetched data
-            setDistrictsGeoJSON(prevGeoJSON => ({
-              ...prevGeoJSON,
-              [selectedDistrict.value]: response.data
-            }));
-            setGeoJsonData(response.data);
-            const bounds = L.geoJSON(response.data).getBounds();
-            setSelectedDistrictGeometry({ getBounds: () => bounds });
-            // Set a new key to force re-render
-            setGeoJsonKey(Math.random());
-          })
-          .catch(error => {
-            console.error('Error fetching GeoJSON data for district:', error);
-          });
-        
-          axios.get(`${API_BASE_URL}get_karauli_raster/${selectedDistrict.value}/`)
-          .then(response => {
-            setRasterUrl(response.data.tiles_url);
-          })
-          .catch(error => {
-            console.error('Error fetching raster data:', error);
-          });  
-      }
-    }
-  }, [selectedDistrict, districtsGeoJSON]);
-
-  useEffect(() => {
-    if (selectedDistrict) {
-      // Assuming the raster data is tied to the district selection
-      axios.get(`${API_BASE_URL}get_raster_data/${selectedDistrict.value}`)
-        .then(response => {
-          // Assuming the response contains the raster URL
-          setRasterUrl(response.data.raster_url);
-        })
-        .catch(error => {
-          console.error('Error fetching raster data:', error);
-        });
+    if (selectedDistrict && selectedDistrict.value) {
+      setLoading(true);
+      fetchGeoJsonData(selectedDistrict.value);
+      fetchRasterData(selectedDistrict.value);
     }
   }, [selectedDistrict]);
 
@@ -228,10 +211,16 @@ const KarauliMap = () => {
   const onEachFeature = (feature, layer) => {
     layer.on({
       click: () => {
-        setSelectedVillage(feature.properties);
+        if (selectedVillage && selectedVillage.village_na === feature.properties.village_na) {
+          // Reset the selected village to force a refresh
+          setSelectedVillage(null);
+          setTimeout(() => setSelectedVillage(feature.properties), 0);
+        } else {
+          setSelectedVillage(feature.properties);
+        }
         setSelectedVillageGeometry(layer);
         setLoading(true);
-
+  
         // Fetch the area change data and precipitation data for the selected village
         Promise.all([
           axios.get(`${API_BASE_URL}area_change/${selectedDistrict.value}/${feature.properties.village_na}/`),
@@ -244,7 +233,6 @@ const KarauliMap = () => {
         }).finally(() => {
           setLoading(false);
         });
-    
       },
     });
   };
@@ -438,13 +426,16 @@ InfoPanel.propTypes = {
           </BaseLayer>
           {rasterUrl && (
             <Overlay name="Raster Data" checked>
-              <TileLayer url={rasterUrl} />
+              <TileLayer 
+               key={`${selectedDistrict.value}-${selectedVillage?.village_na}`}
+              url={rasterUrl}
+               />
             </Overlay>
           )}
            {geoJsonData && (
       <Overlay name="Vector Data" checked>
         <GeoJSON
-          key={geoJsonKey}
+          key={`${geoJsonKey}-${selectedDistrict.value}-${selectedVillage?.village_na}`}
           data={geoJsonData}
           onEachFeature={onEachFeature}
           style={vectorStyle}
