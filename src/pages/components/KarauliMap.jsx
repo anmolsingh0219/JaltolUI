@@ -14,8 +14,8 @@ const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-const API_BASE_URL = 'http://127.0.0.1:8000/api/';
-// const API_BASE_URL = 'https://jaltol.app/api/';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+const API_BASE_URL = 'https://jaltol.app/api/';
 
 const initialMapCenter = [22.3511148, 78.6677428]; // Latitude and longitude of India's geographical center
 const initialMapZoom = 5; // Zoom level for showing the entire country
