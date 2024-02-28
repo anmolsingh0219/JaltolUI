@@ -8,13 +8,36 @@ import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { saveAs } from 'file-saver';
+import InfoPanel from './InfoPanel';
 
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
-const API_BASE_URL = 'https://jaltol.app/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://jaltol.app/api/';
+
+const initialMapCenter = [22.3511148, 78.6677428]; // Latitude and longitude of India's geographical center
+const initialMapZoom = 5; // Zoom level for showing the entire country
+
+function FlyToDistrict({ districtGeometry }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (districtGeometry) {
+      const bounds = districtGeometry.getBounds();
+      map.flyToBounds(bounds, { padding: [50, 50] });
+    }
+  }, [districtGeometry, map]);
+
+  return null;
+}
+
+FlyToDistrict.propTypes = {
+  districtGeometry: PropTypes.shape({
+    getBounds: PropTypes.func.isRequired,
+  }),
+};
 
 function FlyToVillage({ villageGeometry }) {
   const map = useMap();
@@ -35,6 +58,8 @@ FlyToVillage.propTypes = {
   }),
 };
 
+
+
 const datasetDisplayNames = {
   'Single cropping cropland': 'Single Cropland',
   'Double cropping cropland': 'Double Cropland',
@@ -48,6 +73,11 @@ const KarauliMap = () => {
   const [timeSeriesData, setTimeSeriesData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [precipitationData, setPrecipitationData] = useState(null);
+  const [districts, setDistricts] = useState([]);
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [districtsGeoJSON, setDistrictsGeoJSON] = useState({});
+  const [selectedDistrictGeometry, setSelectedDistrictGeometry] = useState(null);
+  const [geoJsonKey, setGeoJsonKey] = useState(Math.random());
 
   
   const [visibleDataSets, setVisibleDataSets] = useState({
@@ -83,15 +113,79 @@ const KarauliMap = () => {
   'Shrub_Scrub': '#946b2d',
   };
 
+  const handleDistrictChange = (event) => {
+    const selectedValue = event.target.value;
+    // Find the district object by value
+    const selectedOption = districts.find(option => option.value === selectedValue);
+    setSelectedDistrict(selectedOption);
+  };
+
   useEffect(() => {
-    axios.get(`${API_BASE_URL}karauli_villages_geojson/`)
+    // Fetch districts for dropdown
+    axios.get(`${API_BASE_URL}list_districts/`)
       .then(response => {
-        setGeoJsonData(response.data);
+        // Check if the 'districts' key exists in the response data
+        if (response.data && Array.isArray(response.data.districts)) {
+          // Map over the array from the 'districts' key
+          const districtOptions = response.data.districts.map(district => ({ value: district }));
+          setDistricts(districtOptions);
+        } else {
+          // Handle the case where 'districts' is not in the expected format
+          console.error('Unexpected format for districts:', response.data);
+        }
       })
-      .catch(error => {
-        console.error('Error fetching GeoJSON data:', error);
-      });
+      .catch(error => console.error('Error fetching districts:', error));
   }, []);
+
+  useEffect(() => {
+    if (selectedDistrict) {
+      // Check if we already have the GeoJSON for the selected district
+      if (districtsGeoJSON[selectedDistrict.value]) {
+        setGeoJsonData(districtsGeoJSON[selectedDistrict.value]);
+      } else {
+        // Fetch GeoJSON data for the selected district
+        axios.get(`${API_BASE_URL}karauli_villages_geojson/${selectedDistrict.value}/`)
+          .then(response => {
+            // Update the GeoJSON state with the fetched data
+            setDistrictsGeoJSON(prevGeoJSON => ({
+              ...prevGeoJSON,
+              [selectedDistrict.value]: response.data
+            }));
+            setGeoJsonData(response.data);
+            const bounds = L.geoJSON(response.data).getBounds();
+            setSelectedDistrictGeometry({ getBounds: () => bounds });
+            // Set a new key to force re-render
+            setGeoJsonKey(Math.random());
+          })
+          .catch(error => {
+            console.error('Error fetching GeoJSON data for district:', error);
+          });
+        
+          axios.get(`${API_BASE_URL}get_karauli_raster/${selectedDistrict.value}/`)
+          .then(response => {
+            setRasterUrl(response.data.tiles_url);
+          })
+          .catch(error => {
+            console.error('Error fetching raster data:', error);
+          });  
+      }
+    }
+  }, [selectedDistrict, districtsGeoJSON]);
+
+  useEffect(() => {
+    if (selectedDistrict) {
+      // Assuming the raster data is tied to the district selection
+      axios.get(`${API_BASE_URL}get_raster_data/${selectedDistrict.value}`)
+        .then(response => {
+          // Assuming the response contains the raster URL
+          setRasterUrl(response.data.raster_url);
+        })
+        .catch(error => {
+          console.error('Error fetching raster data:', error);
+        });
+    }
+  }, [selectedDistrict]);
+
   
   const Legend = () => {
     const map = useMap();
@@ -140,8 +234,8 @@ const KarauliMap = () => {
 
         // Fetch the area change data and precipitation data for the selected village
         Promise.all([
-          axios.get(`${API_BASE_URL}area_change/${feature.properties.VCT_N_11}/`),
-          axios.get(`${API_BASE_URL}rainfall_data/${feature.properties.VCT_N_11}/`)
+          axios.get(`${API_BASE_URL}area_change/${selectedDistrict.value}/${feature.properties.village_na}/`),
+          axios.get(`${API_BASE_URL}rainfall_data/${selectedDistrict.value}/${feature.properties.village_na}/`)
         ]).then(([areaChangeResponse, rainfallResponse]) => {
           setTimeSeriesData(areaChangeResponse.data);
           setPrecipitationData(rainfallResponse.data.rainfall_data);
@@ -152,13 +246,13 @@ const KarauliMap = () => {
         });
         
         // Fetch raster data as before
-        axios.get(`${API_BASE_URL}get_karauli_raster/`)
-          .then(response => {
-            setRasterUrl(response.data.tiles_url);
-          })
-          .catch(error => {
-            console.error('Error fetching raster data:', error);
-          });
+        // axios.get(`${API_BASE_URL}get_karauli_raster/${selectedDistrict.value}/`)
+        //   .then(response => {
+        //     setRasterUrl(response.data.tiles_url);
+        //   })
+        //   .catch(error => {
+        //     console.error('Error fetching raster data:', error);
+        //   });
       },
     });
   };
@@ -267,10 +361,10 @@ const KarauliMap = () => {
     },
     layout: {
       padding: { // Add padding around the chart
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20
+        left: 10,
+        right: 10,
+        top: 10,
+        bottom: 10
       }
     },
     responsive: true,
@@ -322,7 +416,7 @@ const downloadCSV = (mergedData) => {
   const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
   
   // Create a file name using the village name, replacing spaces with underscores
-  const fileName = `${selectedVillage.VCT_N_11.replace(/\s+/g, '_')}_${selectedVillage.SubD_N_11}_data.csv`;
+  const fileName = `${selectedDistrict.value.replace(/\s+/g, '_')}_${selectedVillage.village_na}_data.csv`;
 
   saveAs(blob, fileName);
 };
@@ -331,34 +425,7 @@ const downloadCSV = (mergedData) => {
 const handleDownloadClick = () => {
   
   const mergedData = mergeDataForCSV(timeSeriesData, precipitationData);
-  downloadCSV(mergedData, selectedVillage.VCT_N_11, selectedVillage.SubD_N_11 );
-};
-
-const InfoPanel = ({ villageName }) => {
-  const todaysDate = new Date().toLocaleDateString();
-  const lastUpdated = "Data last updated on: 2024-02-22"; // replace with actual last updated date
-  const landUseData = "Land Use data fetched from the National Satellite Land Monitoring Agency"; // replace with actual source
-
-  return (
-    <div className="info-panel" style={{
-      position: 'absolute',
-      top: '5px',
-      right: '5px',
-      zIndex: 1000,
-      backgroundColor: 'black',
-      color: 'white',
-      padding: '7px',
-      borderRadius: '5px',
-      maxWidth: '300px'
-      // other styles you want to apply
-    }}>
-      <p>{villageName}</p> {/* Dynamic village name */}
-      <p>{todaysDate}</p>
-      <p>{lastUpdated}</p>
-      <p>{landUseData}</p>
-      {/* ... other info you want to display ... */}
-    </div>
-  );
+  downloadCSV(mergedData, selectedDistrict.value, selectedVillage.village_na );
 };
 
 InfoPanel.propTypes = {
@@ -366,9 +433,10 @@ InfoPanel.propTypes = {
 };
 
   return (
-    <div className="flex h-screen w-screen">
-          {selectedVillage && <InfoPanel villageName={selectedVillage.VCT_N_11} />}
-      <MapContainer center={[26.5, 76.5]} zoom={10} className="h-full w-1/2">
+    <div className="flex h-screen w-screen grid-row">
+      <InfoPanel /> {/* Render InfoPanel by default */}
+      <div className='w-2/5'>
+      <MapContainer center={initialMapCenter} zoom={initialMapZoom} className="flex h-full w-full">
         <LayersControl position="topright">
           <BaseLayer checked name="OpenStreetMap">
             <TileLayer
@@ -381,27 +449,51 @@ InfoPanel.propTypes = {
               <TileLayer url={rasterUrl} />
             </Overlay>
           )}
-          {geoJsonData && (
-            <Overlay name="Vector Data" checked>
-              <GeoJSON data={geoJsonData} onEachFeature={onEachFeature} style={vectorStyle} />
-            </Overlay>
-          )}
-        </LayersControl>
-        {selectedVillageGeometry && <FlyToVillage villageGeometry={selectedVillageGeometry} />}
-        <Legend />
+           {geoJsonData && (
+      <Overlay name="Vector Data" checked>
+        <GeoJSON
+          key={geoJsonKey}
+          data={geoJsonData}
+          onEachFeature={onEachFeature}
+          style={vectorStyle}
+        />
+      </Overlay>
+    )}
+  </LayersControl>
+  {selectedDistrictGeometry && <FlyToDistrict districtGeometry={selectedDistrictGeometry} />}
+  {selectedVillageGeometry && <FlyToVillage villageGeometry={selectedVillageGeometry} />}
+  <Legend />
       </MapContainer>
-      <div className="w-1/2 flex flex-col bg-white">
+      </div>
+      <div className="w-2/5 flex flex-col bg-white">
+      <div className=" w-full p-4 text-black">
+      <select
+            value={selectedDistrict?.value || ""}
+            onChange={handleDistrictChange}
+            className="max-w-xs bg-white text-black border-2 border-black text-lg p-1 rounded" // Adjusted styling classes
+            style={{ fontSize: '1rem' }} // Add your own styling classes here
+          >
+            <option value="">Select a District</option>
+            {districts.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.value}
+              </option>
+            ))}
+          </select>
+  <h2 className="text-lg font-semibold mb-2">Takes 5 sec to load a district</h2>
+</div>
+
         {selectedVillage && (
           <div className="overflow-y-auto p-4 bg-white text-black">
             <h2 className="text-lg font-semibold mb-2">Village Details</h2>
-            <p><strong>Name:</strong> {selectedVillage.VCT_N_11}</p>
-            <p><strong>Sub District:</strong> {selectedVillage.SubD_N_11}</p>
-            <p><strong>State:</strong> {selectedVillage.State_N}</p>
+            <p><strong>Name:</strong> {selectedVillage.village_na}</p>
+            <p><strong>District:</strong> {selectedVillage.district_n}</p>
+            <p><strong>State:</strong> {selectedVillage.state_name}</p>
             {/* Additional village details can be added here */}
           </div>
         )}
-          <div className="flex flex-col p-4 bg-white">
-          <div className="text-black text-xl font-semibold mb-4 bg-white">Land Cover Change Over Time</div>
+          <div className="flex flex-col p-2 bg-white">
+          <div className="text-black text-xl font-semibold mb-2 bg-white">Land Cover Change Over Time</div>
           <div className="flex flex-wrap gap-2 mb-4">
   {Object.entries(visibleDataSets).map(([category, isVisible]) => (
     <button
@@ -416,7 +508,7 @@ InfoPanel.propTypes = {
           {loading ? (
             <p className='text-red-600 font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
-            <div className="h-full w-full p-6 bg-white"> {/* Set the height and width to full */}
+            <div className="h-full w-full p-1 bg-white"> {/* Set the height and width to full */}
               <Line
                data={combinedChartData}
                 options={chartOptions}

@@ -71,3 +71,6 @@ button:focus-visible {
   }
 }
 
+.react-select .react-select__single-value {
+  color: red;
+}
