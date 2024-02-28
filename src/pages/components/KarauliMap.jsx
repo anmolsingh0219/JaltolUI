@@ -14,8 +14,8 @@ const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
-const API_BASE_URL = 'https://jaltol.app/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://jaltol.app/api/';
 
 const initialMapCenter = [22.3511148, 78.6677428]; // Latitude and longitude of India's geographical center
 const initialMapZoom = 5; // Zoom level for showing the entire country
@@ -244,15 +244,7 @@ const KarauliMap = () => {
         }).finally(() => {
           setLoading(false);
         });
-        
-        // Fetch raster data as before
-        // axios.get(`${API_BASE_URL}get_karauli_raster/${selectedDistrict.value}/`)
-        //   .then(response => {
-        //     setRasterUrl(response.data.tiles_url);
-        //   })
-        //   .catch(error => {
-        //     console.error('Error fetching raster data:', error);
-        //   });
+    
       },
     });
   };
@@ -508,7 +500,7 @@ InfoPanel.propTypes = {
           {loading ? (
             <p className='text-red-600 font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
-            <div className="h-full w-full p-1 bg-white"> {/* Set the height and width to full */}
+            <div className="h-full w-full p-2 bg-white"> {/* Set the height and width to full */}
               <Line
                data={combinedChartData}
                 options={chartOptions}
