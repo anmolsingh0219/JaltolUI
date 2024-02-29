@@ -363,16 +363,18 @@ const KarauliMap = () => {
 
 
   // Function to merge time series data and precipitation data
-const mergeDataForCSV = (timeSeriesData, precipitationData) => {
-  const mergedData = Object.keys(timeSeriesData).map(year => {
+const mergeDataForCSV = (timeSeriesData, precipitationData,population) => {
+  const mergedData = Object.keys(timeSeriesData).map((year, index) => {
     const singleCropping = timeSeriesData[year]['Single cropping cropland'] || 0;
     const doubleCropping = timeSeriesData[year]['Double cropping cropland'] || 0;
     const precipitation = precipitationData.find(item => item[0] === year)?.[1] || 0;
+    const populationData = index === 0 ? population : "";
     return {
       Year: year,
       'Single Cropland (ha)': singleCropping,
       'Double Cropland (ha)': doubleCropping,
-      'Precipitation (mm)': precipitation
+      'Precipitation (mm)': precipitation,
+      'Population': populationData,
     };
   });
   return mergedData;
@@ -403,8 +405,9 @@ const downloadCSV = (mergedData) => {
 
 // In your component
 const handleDownloadClick = () => {
+  const population = selectedVillage ? selectedVillage.tot_p : 0;
   
-  const mergedData = mergeDataForCSV(timeSeriesData, precipitationData);
+  const mergedData = mergeDataForCSV(timeSeriesData, precipitationData, population);
   downloadCSV(mergedData, selectedDistrict.value, selectedVillage.village_na );
 };
 
@@ -472,6 +475,7 @@ InfoPanel.propTypes = {
             <p><strong>Name:</strong> {selectedVillage.village_na}</p>
             <p><strong>District:</strong> {selectedVillage.district_n}</p>
             <p><strong>State:</strong> {selectedVillage.state_name}</p>
+            <p><strong>Population:</strong> {selectedVillage.tot_p}</p>
             {/* Additional village details can be added here */}
           </div>
         )}
