@@ -122,13 +122,9 @@ const KarauliMap = () => {
 
   const handleDistrictChange = (event) => {
     const selectedValue = event.target.value;
-    setSelectedDistrict({}); // Clear out the previous district to ensure useEffect is triggered
-    setTimeout(() => {
-      const selectedOption = districts.find(option => districtDisplayNames[option.value] === selectedValue);
-      setSelectedDistrict(selectedOption);
-    }, 0);
+    const selectedOption = districts.find(option => districtDisplayNames[option.value] === selectedValue);
+    setSelectedDistrict(selectedOption || '');
   };
-  
 
   const fetchGeoJsonData = (districtValue) => {
     axios.get(`${API_BASE_URL}karauli_villages_geojson/${districtValue}/`)
@@ -173,7 +169,6 @@ const KarauliMap = () => {
 
   useEffect(() => {
     if (selectedDistrict && selectedDistrict.value) {
-      setLoading(true);
       // Use the actual district value (without state code) to fetch data
       const districtValue = selectedDistrict.value.split(',')[0].trim().toLowerCase();
       fetchGeoJsonData(districtValue);
@@ -181,7 +176,10 @@ const KarauliMap = () => {
     }
   }, [selectedDistrict]);
 
-  
+  function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
   const Legend = () => {
     const map = useMap();
   
@@ -464,7 +462,7 @@ InfoPanel.propTypes = {
       </MapContainer>
       </div>
       <div className="w-2/5 flex flex-col bg-white">
-      <div className=" w-full p-4 text-black">
+      <div className=" w-full pt-4 pl-4 pb-2 text-black">
       <select
   value={selectedDistrict ? districtDisplayNames[selectedDistrict.value] : ""}
   onChange={handleDistrictChange}
@@ -478,21 +476,25 @@ InfoPanel.propTypes = {
     </option>
   ))}
 </select>
-  <h2 className="text-lg font-semibold mb-2">Takes 5 sec to load a district</h2>
+  <h2 className="text-lg font-semibold mb-1">Takes 5 sec to load a district</h2>
+  <h2 className="text-base font-semibold text-blue-900">**Zoom in on the district to view the Raster Map</h2>
+  <hr className="h-px mt-2 mr-4 bg-gray-200 border-0 dark:bg-gray-700"></hr>
 </div>
 
         {selectedVillage && (
-          <div className="overflow-y-auto p-4 bg-white text-black">
-            <h2 className="text-lg font-semibold mb-2">Village Details</h2>
-            <p><strong>Name:</strong> {selectedVillage.village_na}</p>
-            <p><strong>District:</strong> {selectedVillage.district_n}</p>
-            <p><strong>State:</strong> {selectedVillage.state_name}</p>
+          <div className="overflow-y-auto pl-4 bg-white text-black">
+            <h2 className="text-xl font-bold mb-1">Village Details</h2>
+            <p><strong>Name:</strong> {capitalizeFirstLetter(selectedVillage.village_na)}</p>
+            <p><strong>District:</strong> {capitalizeFirstLetter(selectedVillage.district_n)}</p>
+            <p><strong>State:</strong> {capitalizeFirstLetter(selectedVillage.state_name)}</p>
             <p><strong>Population:</strong> {selectedVillage.tot_p}</p>
+            <hr className="h-px mt-2 mr-4 bg-gray-200 border-0 dark:bg-gray-700"></hr>
             {/* Additional village details can be added here */}
           </div>
+          
         )}
-          <div className="flex flex-col p-2 bg-white">
-          <div className="text-black text-xl font-semibold mb-2 bg-white">Land Cover Change Over Time</div>
+          <div className="flex flex-col pt-2 pl-4 pr-4 bg-white">
+          <div className="text-black text-2xl font-semibold mb-2 mt-1 bg-white">Land Cover Change Over Time</div>
           <div className="flex flex-wrap gap-2 mb-4">
   {Object.entries(visibleDataSets).map(([category, isVisible]) => (
     <button
@@ -507,7 +509,7 @@ InfoPanel.propTypes = {
           {loading ? (
             <p className='text-red-600 font-bold'>Loading time series data... (20sec)</p>
           ) : timeSeriesData ? (
-            <div className="h-full w-full p-2 bg-white"> {/* Set the height and width to full */}
+            <div className="h-full w-full py-2 bg-white"> {/* Set the height and width to full */}
               <Line
                data={combinedChartData}
                 options={chartOptions}
