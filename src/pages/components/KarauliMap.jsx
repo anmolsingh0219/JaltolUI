@@ -529,6 +529,7 @@ InfoPanel.propTypes = {
     color: 'white',
     border: 'none',
     padding: '10px 20px',
+    margin:'2px 12px',
     borderRadius: '5px',
     cursor: (!timeSeriesData || !precipitationData) ? 'not-allowed' : 'pointer',
     // other styles you want to apply
