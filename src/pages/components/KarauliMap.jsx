@@ -477,7 +477,7 @@ InfoPanel.propTypes = {
   ))}
 </select>
   <h2 className="text-lg font-semibold mb-1">Takes 5 sec to load a district</h2>
-  <h2 className="text-base font-semibold text-blue-900">**Zoom in on the district to view the Raster Map</h2>
+  <h2 className="text-base font-semibold text-blue-900">**Zoom in on the district to view the Agricultural Land Use Raster Map 2022-23</h2>
   <hr className="h-px mt-2 mr-4 bg-gray-200 border-0 dark:bg-gray-700"></hr>
 </div>
 
