@@ -13,8 +13,8 @@ import InfoPanel from './InfoPanel';
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
-const API_BASE_URL = 'https://jaltol.app/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://jaltol.app/api/';
 
 const initialMapCenter = [22.3511148, 78.6677428]; // Latitude and longitude of India's geographical center
 const initialMapZoom = 5; // Zoom level for showing the entire country
@@ -60,7 +60,7 @@ FlyToVillage.propTypes = {
 const districtDisplayNames = {
   'anantapur': 'Anantapur, AP',
   'dhamtari': 'Dhamtari, CG',
-  'kanker': 'Kanker, CG',
+  'uttar bastar kanker': 'Kanker, CG',
   'karauli': 'Karauli, RJ',
   'koppal': 'Koppal, KA',
   'raichur': 'Raichur, KA',
