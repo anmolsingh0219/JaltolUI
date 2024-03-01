@@ -13,9 +13,8 @@ import InfoPanel from './InfoPanel';
 const { BaseLayer, Overlay } = LayersControl;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// const API_BASE_URL = 'https://ec2-3-109-201-231.ap-south-1.compute.amazonaws.com/api/';
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/';
-const API_BASE_URL = 'https://jaltol.app/api/';
+const API_BASE_URL = 'http://127.0.0.1:8000/api/';
+// const API_BASE_URL = 'https://jaltol.app/api/';
 
 const initialMapCenter = [22.3511148, 78.6677428]; // Latitude and longitude of India's geographical center
 const initialMapZoom = 5; // Zoom level for showing the entire country
@@ -58,6 +57,15 @@ FlyToVillage.propTypes = {
   }),
 };
 
+const districtDisplayNames = {
+  'anantapur': 'Anantapur, AP',
+  'bankura': 'Bankura, WB',
+  'dhamtari': 'Dhamtari, CG',
+  'kanker': 'Kanker, CG',
+  'karauli': 'Karauli, RJ',
+  'koppal': 'Koppal, KA',
+  'raichur': 'Raichur, KA',
+};
 
 
 const datasetDisplayNames = {
@@ -115,10 +123,13 @@ const KarauliMap = () => {
 
   const handleDistrictChange = (event) => {
     const selectedValue = event.target.value;
-    // Find the district object by value
-    const selectedOption = districts.find(option => option.value === selectedValue);
-    setSelectedDistrict(selectedOption);
+    setSelectedDistrict({}); // Clear out the previous district to ensure useEffect is triggered
+    setTimeout(() => {
+      const selectedOption = districts.find(option => districtDisplayNames[option.value] === selectedValue);
+      setSelectedDistrict(selectedOption);
+    }, 0);
   };
+  
 
   const fetchGeoJsonData = (districtValue) => {
     axios.get(`${API_BASE_URL}karauli_villages_geojson/${districtValue}/`)
@@ -164,8 +175,10 @@ const KarauliMap = () => {
   useEffect(() => {
     if (selectedDistrict && selectedDistrict.value) {
       setLoading(true);
-      fetchGeoJsonData(selectedDistrict.value);
-      fetchRasterData(selectedDistrict.value);
+      // Use the actual district value (without state code) to fetch data
+      const districtValue = selectedDistrict.value.split(',')[0].trim().toLowerCase();
+      fetchGeoJsonData(districtValue);
+      fetchRasterData(districtValue);
     }
   }, [selectedDistrict]);
 
@@ -211,10 +224,10 @@ const KarauliMap = () => {
   const onEachFeature = (feature, layer) => {
     layer.on({
       click: () => {
-        if (selectedVillage && selectedVillage.village_na === feature.properties.village_na) {
-          // Reset the selected village to force a refresh
+        if (selectedVillage && feature.properties.village_na === selectedVillage.village_na) {
+          // Deselect and reselect the village to force an update
           setSelectedVillage(null);
-          setTimeout(() => setSelectedVillage(feature.properties), 0);
+          setTimeout(() => setSelectedVillage(feature.properties), 10);
         } else {
           setSelectedVillage(feature.properties);
         }
@@ -454,18 +467,18 @@ InfoPanel.propTypes = {
       <div className="w-2/5 flex flex-col bg-white">
       <div className=" w-full p-4 text-black">
       <select
-            value={selectedDistrict?.value || ""}
-            onChange={handleDistrictChange}
-            className="max-w-xs bg-white text-black border-2 border-black text-lg p-1 rounded" // Adjusted styling classes
-            style={{ fontSize: '1rem' }} // Add your own styling classes here
-          >
-            <option value="">Select a District</option>
-            {districts.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.value}
-              </option>
-            ))}
-          </select>
+  value={selectedDistrict ? districtDisplayNames[selectedDistrict.value] : ""}
+  onChange={handleDistrictChange}
+  className="max-w-xs bg-white text-black border-2 border-black text-lg p-1 rounded"
+  style={{ fontSize: '1rem' }}
+>
+  <option value="">Select a District</option>
+  {districts.map((option) => (
+    <option key={option.value} value={districtDisplayNames[option.value]}>
+      {districtDisplayNames[option.value]}
+    </option>
+  ))}
+</select>
   <h2 className="text-lg font-semibold mb-2">Takes 5 sec to load a district</h2>
 </div>
 
