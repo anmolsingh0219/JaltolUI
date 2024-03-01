@@ -59,7 +59,6 @@ FlyToVillage.propTypes = {
 
 const districtDisplayNames = {
   'anantapur': 'Anantapur, AP',
-  'bankura': 'Bankura, WB',
   'dhamtari': 'Dhamtari, CG',
   'kanker': 'Kanker, CG',
   'karauli': 'Karauli, RJ',
