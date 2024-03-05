@@ -63,6 +63,7 @@ const districtDisplayNames = {
   'uttar bastar kanker': 'Kanker, CG',
   'karauli': 'Karauli, RJ',
   'koppal': 'Koppal, KA',
+  'thane': 'Palghar, MH',
   'raichur': 'Raichur, KA',
 };
 
@@ -85,6 +86,9 @@ const KarauliMap = () => {
   // const [districtsGeoJSON, setDistrictsGeoJSON] = useState({});
   const [selectedDistrictGeometry, setSelectedDistrictGeometry] = useState(null);
   const [geoJsonKey, setGeoJsonKey] = useState(Math.random());
+
+  const [carbonUrl, setCarbonUrl] = useState(null);
+  const [slopeUrl, setSlopeUrl] = useState(null);
 
   
   const [visibleDataSets, setVisibleDataSets] = useState({
@@ -150,6 +154,26 @@ const KarauliMap = () => {
       });
   };
 
+  const fetchCarbonData = (districtValue) => {
+    axios.get(`${API_BASE_URL}get_district_carbon/${districtValue}/`)
+      .then(response => {
+        setCarbonUrl(response.data.tiles_url);
+      })
+      .catch(error => {
+        console.error('Error fetching carbon data:', error);
+      });
+  };
+
+  const fetchSlopeData = (districtValue) => {
+    axios.get(`${API_BASE_URL}get_district_slope/${districtValue}/`)
+      .then(response => {
+        setSlopeUrl(response.data.tiles_url);
+      })
+      .catch(error => {
+        console.error('Error fetching carbon data:', error);
+      });
+  };
+
   useEffect(() => {
     // Fetch districts for dropdown
     axios.get(`${API_BASE_URL}list_districts/`)
@@ -173,6 +197,8 @@ const KarauliMap = () => {
       const districtValue = selectedDistrict.value.split(',')[0].trim().toLowerCase();
       fetchGeoJsonData(districtValue);
       fetchRasterData(districtValue);
+      fetchCarbonData(districtValue);
+      fetchSlopeData(districtValue);
     }
   }, [selectedDistrict]);
 
@@ -437,16 +463,8 @@ InfoPanel.propTypes = {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
           </BaseLayer>
-          {rasterUrl && (
-            <Overlay name="Raster Data" checked>
-              <TileLayer 
-               key={`${selectedDistrict.value}-${selectedVillage?.village_na}`}
-              url={rasterUrl}
-               />
-            </Overlay>
-          )}
-           {geoJsonData && (
-      <Overlay name="Vector Data" checked>
+          {geoJsonData && (
+      <Overlay name="Boundary" checked>
         <GeoJSON
           key={`${geoJsonKey}-${selectedDistrict.value}-${selectedVillage?.village_na}`}
           data={geoJsonData}
@@ -455,6 +473,30 @@ InfoPanel.propTypes = {
         />
       </Overlay>
     )}
+          {rasterUrl && (
+            <Overlay name="LULC Map" checked>
+              <TileLayer 
+               key={`${selectedDistrict.value}-${selectedVillage?.village_na}`}
+              url={rasterUrl}
+               />
+            </Overlay>
+          )}
+          {carbonUrl && (
+            <Overlay name="Organic Carbon Map" unchecked>
+              <TileLayer 
+               key={`${selectedDistrict.value}-${selectedVillage?.village_na}`}
+              url={carbonUrl}
+               />
+            </Overlay>
+          )}
+          {slopeUrl && (
+            <Overlay name="Slope Map" unchecked>
+              <TileLayer 
+               key={`${selectedDistrict.value}-${selectedVillage?.village_na}`}
+              url={slopeUrl}
+               />
+            </Overlay>
+          )}
   </LayersControl>
   {selectedDistrictGeometry && <FlyToDistrict districtGeometry={selectedDistrictGeometry} />}
   {selectedVillageGeometry && <FlyToVillage villageGeometry={selectedVillageGeometry} />}
@@ -477,7 +519,8 @@ InfoPanel.propTypes = {
   ))}
 </select>
   <h2 className="text-lg font-semibold mb-1">Takes 5 sec to load a district</h2>
-  <h2 className="text-base font-semibold text-blue-900">**Zoom in on the district to view the Agricultural Land Use Raster Map 2022-23</h2>
+  <h2 className="text-sm font-semibold text-blue-900">*Zoom in on the district to view the Agricultural Land Use Raster Map 2022-23</h2>
+  <h2 className="text-sm font-semibold text-blue-900 pt-1">**Click on the layers logo on the top right of the map to view different Map views</h2>
   <hr className="h-px mt-2 mr-4 bg-gray-200 border-0 dark:bg-gray-700"></hr>
 </div>
 
